@@ -58,6 +58,7 @@ pub struct TcpSocketOptions {
     /// will bind to both IPv4 and IPv6 addresses by default.
     pub ipv6_only: bool,
     // TODO: allow configuring reuseaddr, backlog, etc. from here?
+    pub tp_proxy: bool,
 }
 
 mod uds {
@@ -124,7 +125,10 @@ fn apply_tcp_socket_options(sock: &TcpSocket, opt: Option<&TcpSocketOptions>) ->
     let socket_ref = socket2::SockRef::from(sock);
     socket_ref
         .set_only_v6(opt.ipv6_only)
-        .or_err(BindError, "failed to set IPV6_V6ONLY")
+        .or_err(BindError, "failed to set IPV6_V6ONLY");
+    socket_ref
+    .set_ip_transparent(opt.tp_proxy)
+    .or_err(BindError, "failed to set IPV6_V6ONLY")
 }
 
 fn from_raw_fd(address: &ServerAddress, fd: i32) -> Result<Listener> {
@@ -279,7 +283,7 @@ mod test {
 
     #[tokio::test]
     async fn test_listen_tcp_ipv6_only() {
-        let sock_opt = Some(TcpSocketOptions { ipv6_only: true });
+        let sock_opt = Some(TcpSocketOptions { ipv6_only: true, tp_proxy: false });
         let mut listener = ListenerEndpoint::new(ServerAddress::Tcp("[::]:7101".into(), sock_opt));
         listener.listen(None).await.unwrap();
         tokio::spawn(async move {
