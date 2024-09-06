@@ -82,7 +82,7 @@ pub struct TcpSocketOptions {
     // TODO: allow configuring reuseaddr, backlog, etc. from here?
     pub tp_proxy: Option<bool>,
 
-    pub mark: Option<u32>
+    pub mark: Option<u32>,
 }
 
 mod uds {
@@ -169,9 +169,9 @@ fn apply_tcp_socket_options(sock: &TcpSocket, opt: Option<&TcpSocketOptions>) ->
 
     if let Some(mark) = opt.mark {
         let socket_ref: socket2::SockRef<'_> = socket2::SockRef::from(sock);
-        socket_ref.set_mark(mark)
-        .or_err(BindError, "failed to set mark")
-
+        socket_ref
+            .set_mark(mark)
+            .or_err(BindError, "failed to set mark")?;
     }
 
     Ok(())
