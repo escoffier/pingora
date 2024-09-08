@@ -193,6 +193,11 @@ pub trait Peer: Display + Clone {
     fn get_tracer(&self) -> Option<Tracer> {
         None
     }
+
+    fn mark(&self) -> Option<u32> {
+        self.get_peer_options().and_then(|o| o.mark)
+    }
+
 }
 
 /// A simple TCP or TLS peer without many complicated settings.
@@ -325,6 +330,8 @@ pub struct PeerOptions {
     pub tracer: Option<Tracer>,
     // A custom L4 connector to use to establish new L4 connections
     pub custom_l4: Option<Arc<dyn L4Connect + Send + Sync>>,
+
+    pub mark: Option<u32>,
 }
 
 impl PeerOptions {
@@ -354,6 +361,7 @@ impl PeerOptions {
             tcp_fast_open: false,
             tracer: None,
             custom_l4: None,
+            mark: None,
         }
     }
 

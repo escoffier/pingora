@@ -15,6 +15,7 @@
 //! Transport layer connection
 
 use async_trait::async_trait;
+use futures::future::ok;
 use futures::FutureExt;
 use log::{debug, error};
 use pingora_error::{ErrorType::*, OrErr, Result};
@@ -160,6 +161,14 @@ impl Stream {
         if let RawStream::Tcp(s) = &self.stream.get_ref() {
             debug!("Setting tcp keepalive");
             set_tcp_keepalive(s, ka)?;
+        }
+        Ok(())
+    }
+
+    pub fn  set_mark(&mut self, mark: u32) -> Result<()> {
+        if let RawStream::Tcp(s) = &self.stream.get_ref() {
+            debug!("setting mark");
+            // s.set_linger(dur)
         }
         Ok(())
     }

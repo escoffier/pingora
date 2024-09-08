@@ -128,6 +128,10 @@ where
     }
     stream.set_nodelay()?;
 
+    if let Some(mark) = peer.mark() {
+        stream.set_mark(mark)?;
+    }
+
     let digest = SocketDigest::from_raw_fd(stream.as_raw_fd());
     digest
         .peer_addr
