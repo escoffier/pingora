@@ -19,7 +19,7 @@ use pingora_error::{
     ErrorType::{InternalError, SocketError},
     OrErr, Result,
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, marker};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::hash::{Hash, Hasher};
 use std::net::{IpAddr, SocketAddr as InetSocketAddr, ToSocketAddrs as ToInetSocketAddrs};
@@ -410,6 +410,9 @@ impl Display for PeerOptions {
         }
         if let Some(h2_ping_interval) = self.h2_ping_interval {
             write!(f, "h2_ping_interval: {:?},", h2_ping_interval)?;
+        }
+        if let Some(mark) = self.mark {
+            write!(f, "mark: {:?},", mark)?;
         }
         Ok(())
     }

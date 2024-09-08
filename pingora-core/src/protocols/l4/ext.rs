@@ -311,12 +311,13 @@ pub fn get_socket_cookie(_fd: RawFd) -> io::Result<u64> {
 }
 
 #[cfg(target_os = "linux")]
-fn set_mark(fd: RawFd, mark: u32) -> io::Result<()> {
-    set_so_mark(fd, mark);
+pub fn set_mark(fd: RawFd, mark: u32) -> Result<()> {
+    set_opt(fd, libc::SOL_SOCKET, libc::SO_MARK, mark as c_int)
+    .or_err(ConnectError, "failed to set SO_MARK")
 }
 
 #[cfg(not(target_os = "linux"))]
-fn set_mark(_fd: RawFd, _mark: u32) -> io::Result<()> {
+fn set_mark(_fd: RawFd, _mark: u32) -> Result<()> {
     Ok(())
 }
 
@@ -409,12 +410,6 @@ pub fn set_tcp_keepalive(stream: &TcpStream, ka: &TcpKeepalive) -> Result<()> {
     let fd = stream.as_raw_fd();
     // TODO: check localhost or if keepalive is already set
     set_keepalive(fd, ka).or_err(ConnectError, "failed to set keepalive")
-}
-
-pub fn set_pkt_mark(stream: &TcpStream, mark: u32) -> Result<()> {
-    let fd: i32 = stream.as_raw_fd();
-    // TODO: check localhost or if keepalive is already set
-    set_mark(fd, mark).or_err(ConnectError, "failed to set pkt mark")
 }
 
 #[cfg(test)]

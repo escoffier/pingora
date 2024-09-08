@@ -20,7 +20,7 @@ use std::net::SocketAddr as InetSocketAddr;
 use std::os::unix::io::AsRawFd;
 
 use crate::protocols::l4::ext::{
-    connect_uds, connect_with as tcp_connect, set_dscp, set_recv_buf, set_tcp_fastopen_connect,
+    connect_uds, connect_with as tcp_connect, set_dscp, set_mark, set_recv_buf, set_tcp_fastopen_connect
 };
 use crate::protocols::l4::socket::SocketAddr;
 use crate::protocols::l4::stream::Stream;
@@ -61,6 +61,10 @@ where
                         if let Some(dscp) = peer.dscp() {
                             debug!("Setting dscp");
                             set_dscp(socket.as_raw_fd(), dscp)?;
+                        }
+                        if let Some(pkt_mark) = peer.mark() {
+                            debug!("Setting pkt mark");
+                            set_mark(socket.as_raw_fd(), pkt_mark)?;
                         }
                         Ok(())
                     });
