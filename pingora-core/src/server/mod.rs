@@ -71,6 +71,7 @@ pub struct Server {
     ///
     /// Panics and other events sentry captures will be sent to this DSN **only in release mode**
     pub sentry: Option<ClientOptions>,
+    runtimes: Vec<Runtime>,
 }
 
 // TODO: delete the pid when exit
@@ -192,6 +193,7 @@ impl Server {
             configuration: Arc::new(conf),
             options: Some(opt),
             sentry: None,
+            runtimes: vec![],
         }
     }
 
@@ -232,6 +234,7 @@ impl Server {
             configuration: Arc::new(conf),
             options: opt,
             sentry: None,
+            runtimes: vec![],
         })
     }
 
@@ -249,14 +252,15 @@ impl Server {
 
     pub fn run_service1(&mut self, service: impl Service + 'static) {
         let conf = self.configuration.as_ref();
-      let threads = service.threads().unwrap_or(conf.threads);
-            let _runtime = Server::run_service(
-                Box::new(service),
-                self.listen_fds.clone(),
-                self.shutdown_recv.clone(),
-                threads,
-                conf.work_stealing,
-            );
+        let threads = service.threads().unwrap_or(conf.threads);
+        let runtime = Server::run_service(
+            Box::new(service),
+            self.listen_fds.clone(),
+            self.shutdown_recv.clone(),
+            threads,
+            conf.work_stealing,
+        );
+        self.runtimes.push(runtime);
     }
 
     /// Prepare the server to start
