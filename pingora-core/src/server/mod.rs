@@ -247,6 +247,18 @@ impl Server {
         self.services.extend(services);
     }
 
+    pub fn run_service1(&mut self, service: impl Service + 'static) {
+        let conf = self.configuration.as_ref();
+      let threads = service.threads().unwrap_or(conf.threads);
+            let _runtime = Server::run_service(
+                Box::new(service),
+                self.listen_fds.clone(),
+                self.shutdown_recv.clone(),
+                threads,
+                conf.work_stealing,
+            );
+    }
+
     /// Prepare the server to start
     ///
     /// When trying to zero downtime upgrade from an older version of the server which is already
@@ -303,19 +315,19 @@ impl Server {
         #[cfg(not(debug_assertions))]
         let _guard = self.sentry.as_ref().map(|opts| sentry::init(opts.clone()));
 
-        let mut runtimes: Vec<Runtime> = Vec::new();
+        // let mut runtimes: Vec<Runtime> = Vec::new();
 
-        while let Some(service) = self.services.pop() {
-            let threads = service.threads().unwrap_or(conf.threads);
-            let runtime = Server::run_service(
-                service,
-                self.listen_fds.clone(),
-                self.shutdown_recv.clone(),
-                threads,
-                conf.work_stealing,
-            );
-            runtimes.push(runtime);
-        }
+        // while let Some(service) = self.services.pop() {
+        //     let threads = service.threads().unwrap_or(conf.threads);
+        //     let runtime = Server::run_service(
+        //         service,
+        //         self.listen_fds.clone(),
+        //         self.shutdown_recv.clone(),
+        //         threads,
+        //         conf.work_stealing,
+        //     );
+        //     runtimes.push(runtime);
+        // }
 
         // blocked on main loop so that it runs forever
         // Only work steal runtime can use block_on()
@@ -343,21 +355,21 @@ impl Server {
                     .unwrap_or(5),
             ),
         };
-        let shutdowns: Vec<_> = runtimes
-            .into_iter()
-            .map(|rt| {
-                info!("Waiting for runtimes to exit!");
-                thread::spawn(move || {
-                    rt.shutdown_timeout(shutdown_timeout);
-                    thread::sleep(shutdown_timeout)
-                })
-            })
-            .collect();
-        for shutdown in shutdowns {
-            if let Err(e) = shutdown.join() {
-                error!("Failed to shutdown runtime: {:?}", e);
-            }
-        }
+        // let shutdowns: Vec<_> = runtimes
+        //     .into_iter()
+        //     .map(|rt| {
+        //         info!("Waiting for runtimes to exit!");
+        //         thread::spawn(move || {
+        //             rt.shutdown_timeout(shutdown_timeout);
+        //             thread::sleep(shutdown_timeout)
+        //         })
+        //     })
+        //     .collect();
+        // for shutdown in shutdowns {
+        //     if let Err(e) = shutdown.join() {
+        //         error!("Failed to shutdown runtime: {:?}", e);
+        //     }
+        // }
         info!("All runtimes exited, exiting now");
         std::process::exit(0)
     }
