@@ -45,7 +45,7 @@ impl TransportStackBuilder {
     }
 }
 
-pub(crate) struct TransportStack {
+pub struct TransportStack {
     l4: ListenerEndpoint,
     tls: Option<Arc<Acceptor>>,
     // listeners sent from the old process for graceful upgrade
@@ -168,7 +168,7 @@ impl Listeners {
         self.stacks.push(TransportStackBuilder { l4, tls })
     }
 
-    pub(crate) fn build(&mut self, upgrade_listeners: Option<ListenFds>) -> Vec<TransportStack> {
+    pub fn build(&mut self, upgrade_listeners: Option<ListenFds>) -> Vec<TransportStack> {
         self.stacks
             .iter_mut()
             .map(|b| b.build(upgrade_listeners.clone()))
