@@ -74,7 +74,7 @@ impl TransportStack {
     }
 }
 
-pub(crate) struct UninitializedStream {
+pub struct UninitializedStream {
     l4: L4Stream,
     tls: Option<Arc<Acceptor>>,
 }
