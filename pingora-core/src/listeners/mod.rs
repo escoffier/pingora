@@ -49,7 +49,7 @@ impl TransportStackBuilder {
             l4: ListenerEndpoint::new(self.l4.clone()),
             tls: self.tls.take().map(|tls| Arc::new(tls.build())),
             upgrade_listeners,
-            netns: self.netns,
+            netns: self.netns.clone(),
         }
     }
 }

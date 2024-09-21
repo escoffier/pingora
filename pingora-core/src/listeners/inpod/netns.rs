@@ -82,11 +82,11 @@ impl InpodNetns {
     where
         F: FnOnce() -> T,
     {
-        setns(&self.inner.netns.as_raw_fd(), CloneFlags::CLONE_NEWNET)
+        setns(self.inner.netns.as_raw_fd(), CloneFlags::CLONE_NEWNET)
             .map_err(|e| std::io::Error::from_raw_os_error(e as i32))?;
         info!("netns: {}", self.inner.netns.as_raw_fd());
         let ret = f();
-        setns(&self.inner.cur_netns.as_raw_fd(), CloneFlags::CLONE_NEWNET).expect("this must never fail");
+        setns(self.inner.cur_netns.as_raw_fd(), CloneFlags::CLONE_NEWNET).expect("this must never fail");
         info!("cur_netns: {}", self.inner.cur_netns.as_raw_fd());
         Ok(ret)
     }
