@@ -14,9 +14,9 @@
 
 //! The listening endpoints (TCP and TLS) and their configurations.
 
+mod inpod;
 mod l4;
 mod tls;
-mod inpod;
 
 use crate::protocols::Stream;
 use crate::server::ListenFds;
@@ -29,9 +29,9 @@ use pingora_error::{
 };
 use std::{fs::Permissions, sync::Arc};
 
+use inpod::netns::InpodNetns;
 use l4::{ListenerEndpoint, Stream as L4Stream};
 use tls::Acceptor;
-use inpod::netns::InpodNetns;
 
 pub use crate::protocols::tls::server::TlsAccept;
 pub use l4::{ServerAddress, TcpSocketOptions};
@@ -68,17 +68,17 @@ impl TransportStack {
     }
 
     pub async fn listen(&mut self) -> Result<()> {
-        let netns = self.netns.as_ref().unwrap();
-
-        let ret = netns.run(|| {
-            self.l4.listen(self.upgrade_listeners.take())
-        });
-
-        match ret {
-            Ok(ret) => {
-                return Ok(());
+        if self.netns.is_none() {
+            self.l4.listen(self.upgrade_listeners.take()).await
+        } else {
+            let netns = self.netns.as_ref().unwrap();
+            let ret = netns.run(|| self.l4.listen(self.upgrade_listeners.take()));
+            match ret {
+                Ok(_ret) => {
+                    return Ok(());
+                }
+                Err(e) => Err(e).or_err(BindError, "bind "),
             }
-            Err(e) =>  Err(e).or_err(BindError, "bind "),
         }
 
         // Ok(())
@@ -162,7 +162,12 @@ impl Listeners {
     }
 
     /// Add a TCP endpoint to `self`, with the given [`TcpSocketOptions`] and network namespace.
-    pub fn add_ns_tcp_with_settings(&mut self, netns: InpodNetns,addr: &str, sock_opt: TcpSocketOptions) {
+    pub fn add_ns_tcp_with_settings(
+        &mut self,
+        netns: InpodNetns,
+        addr: &str,
+        sock_opt: TcpSocketOptions,
+    ) {
         self.add_address(ServerAddress::Tcp(addr.into(), Some(sock_opt)));
     }
 
@@ -198,7 +203,12 @@ impl Listeners {
         self.add_endpoint(addr, None);
     }
 
-    pub fn add_endpoint_with_ns(&mut self, l4: ServerAddress, tls: Option<TlsSettings>, netns :Option<InpodNetns>) {
+    pub fn add_endpoint_with_ns(
+        &mut self,
+        l4: ServerAddress,
+        tls: Option<TlsSettings>,
+        netns: Option<InpodNetns>,
+    ) {
         self.stacks.push(TransportStackBuilder { l4, tls, netns })
     }
 
