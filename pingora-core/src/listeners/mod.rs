@@ -168,7 +168,7 @@ impl Listeners {
         addr: &str,
         sock_opt: TcpSocketOptions,
     ) {
-        self.add_address(ServerAddress::Tcp(addr.into(), Some(sock_opt)));
+        self.add_addres_with_ns(netns,ServerAddress::Tcp(addr.into(), Some(sock_opt)));
     }
 
     /// Add a Unix domain socket endpoint to `self`.
@@ -199,8 +199,8 @@ impl Listeners {
         self.add_endpoint(addr, None);
     }
 
-    pub fn add_addres_with_ns(&mut self, addr: ServerAddress) {
-        self.add_endpoint(addr, None);
+    pub fn add_addres_with_ns(&mut self, netns: InpodNetns, addr: ServerAddress) {
+        self.add_endpoint_with_ns(addr, None, Some(netns));
     }
 
     pub fn add_endpoint_with_ns(
