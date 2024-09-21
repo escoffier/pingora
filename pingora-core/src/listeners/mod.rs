@@ -16,15 +16,22 @@
 
 mod l4;
 mod tls;
+mod inpod;
 
 use crate::protocols::Stream;
 use crate::server::ListenFds;
 
-use pingora_error::Result;
+use futures::future::ok;
+// use pingora_error::Result;
+use pingora_error::{
+    ErrorType::{AcceptError, BindError},
+    OrErr, Result,
+};
 use std::{fs::Permissions, sync::Arc};
 
 use l4::{ListenerEndpoint, Stream as L4Stream};
 use tls::Acceptor;
+use inpod::netns::InpodNetns;
 
 pub use crate::protocols::tls::server::TlsAccept;
 pub use l4::{ServerAddress, TcpSocketOptions};
@@ -33,6 +40,7 @@ pub use tls::{TlsSettings, ALPN};
 struct TransportStackBuilder {
     l4: ServerAddress,
     tls: Option<TlsSettings>,
+    netns: Option<InpodNetns>,
 }
 
 impl TransportStackBuilder {
@@ -41,6 +49,7 @@ impl TransportStackBuilder {
             l4: ListenerEndpoint::new(self.l4.clone()),
             tls: self.tls.take().map(|tls| Arc::new(tls.build())),
             upgrade_listeners,
+            netns: self.netns,
         }
     }
 }
@@ -50,6 +59,7 @@ pub struct TransportStack {
     tls: Option<Arc<Acceptor>>,
     // listeners sent from the old process for graceful upgrade
     upgrade_listeners: Option<ListenFds>,
+    netns: Option<InpodNetns>,
 }
 
 impl TransportStack {
@@ -58,7 +68,23 @@ impl TransportStack {
     }
 
     pub async fn listen(&mut self) -> Result<()> {
-        self.l4.listen(self.upgrade_listeners.take()).await
+        let netns = self.netns.as_ref().unwrap();
+
+        let ret = netns.run(|| {
+            self.l4.listen(self.upgrade_listeners.take())
+        });
+
+        match ret {
+            Ok(ret) => {
+                return Ok(());
+            }
+            Err(e) =>  Err(e).or_err(BindError, "bind "),
+        }
+
+        // Ok(())
+        // Ok(ret.ok())
+
+        // self.l4.listen(self.upgrade_listeners.take()).await
     }
 
     pub async fn accept(&mut self) -> Result<UninitializedStream> {
@@ -135,6 +161,11 @@ impl Listeners {
         self.add_address(ServerAddress::Tcp(addr.into(), Some(sock_opt)));
     }
 
+    /// Add a TCP endpoint to `self`, with the given [`TcpSocketOptions`] and network namespace.
+    pub fn add_ns_tcp_with_settings(&mut self, netns: InpodNetns,addr: &str, sock_opt: TcpSocketOptions) {
+        self.add_address(ServerAddress::Tcp(addr.into(), Some(sock_opt)));
+    }
+
     /// Add a Unix domain socket endpoint to `self`.
     pub fn add_uds(&mut self, addr: &str, perm: Option<Permissions>) {
         self.add_address(ServerAddress::Uds(addr.into(), perm));
@@ -163,9 +194,18 @@ impl Listeners {
         self.add_endpoint(addr, None);
     }
 
+    pub fn add_addres_with_ns(&mut self, addr: ServerAddress) {
+        self.add_endpoint(addr, None);
+    }
+
+    pub fn add_endpoint_with_ns(&mut self, l4: ServerAddress, tls: Option<TlsSettings>, netns :Option<InpodNetns>) {
+        self.stacks.push(TransportStackBuilder { l4, tls, netns })
+    }
+
     /// Add the given [`ServerAddress`] to `self` with the given [`TlsSettings`] if provided
     pub fn add_endpoint(&mut self, l4: ServerAddress, tls: Option<TlsSettings>) {
-        self.stacks.push(TransportStackBuilder { l4, tls })
+        let netns = None;
+        self.stacks.push(TransportStackBuilder { l4, tls, netns })
     }
 
     pub fn build(&mut self, upgrade_listeners: Option<ListenFds>) -> Vec<TransportStack> {
