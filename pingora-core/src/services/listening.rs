@@ -19,7 +19,7 @@
 //! more endpoints to listen to.
 
 use crate::apps::ServerApp;
-use crate::listeners::{Listeners, ServerAddress, TcpSocketOptions, TlsSettings, TransportStack};
+use crate::listeners::{Listeners, ServerAddress, TcpSocketOptions, TlsSettings, TransportStack, inpod::netns::InpodNetns};
 use crate::protocols::Stream;
 use crate::server::{ListenFds, ShutdownWatch};
 use crate::services::Service as ServiceTrait;
@@ -77,6 +77,11 @@ impl<A> Service<A> {
     /// Add a TCP listening endpoint with the given [`TcpSocketOptions`].
     pub fn add_tcp_with_settings(&mut self, addr: &str, sock_opt: TcpSocketOptions) {
         self.listeners.add_tcp_with_settings(addr, sock_opt);
+    }
+
+    /// Add a TCP listening endpoint with the given [`TcpSocketOptions`].
+    pub fn add_ns_tcp_with_settings(&mut self, netns:InpodNetns, addr: &str, sock_opt: TcpSocketOptions, ) {
+        self.listeners.add_ns_tcp_with_settings(netns, addr, sock_opt);
     }
 
     /// Add a Unix domain socket listening endpoint with the given path.

@@ -14,7 +14,7 @@
 
 //! The listening endpoints (TCP and TLS) and their configurations.
 
-mod inpod;
+pub mod inpod;
 mod l4;
 mod tls;
 
