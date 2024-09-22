@@ -22,6 +22,7 @@ use log::info;
 use pingora_error::{
     ErrorType::{AcceptError, BindError},
     OrErr, Result};
+use futures::executor::block_on;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct NetnsID {

@@ -21,7 +21,7 @@ mod tls;
 use crate::protocols::Stream;
 use crate::server::ListenFds;
 use log::info;
-use futures::future::ok;
+use futures::{executor::block_on, future::ok};
 
 // use pingora_error::Result;
 use pingora_error::{
@@ -71,8 +71,12 @@ impl TransportStack {
     pub async fn listen(&mut self) -> Result<()> {
         info!("### TransportStack listen ");
         if let Some(netns) = &self.netns {
-            netns.run(|| async { 
-                self.l4.listen(self.upgrade_listeners.take()).await 
+            // netns.run(|| async { 
+            //     self.l4.listen(self.upgrade_listeners.take()).await 
+            // })
+            netns.run(||  { 
+                let ret = self.l4.listen(self.upgrade_listeners.take());
+                block_on(ret);
             })
         } else {
             self.l4.listen(self.upgrade_listeners.take()).await
