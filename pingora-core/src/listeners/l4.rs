@@ -271,6 +271,7 @@ impl ListenerEndpoint {
 
     pub async fn listen(&mut self, fds: Option<ListenFds>) -> Result<()> {
         if self.listener.is_some() {
+            info!("### listen exist");
             return Ok(());
         }
 
