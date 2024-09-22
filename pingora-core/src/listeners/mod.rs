@@ -68,23 +68,13 @@ impl TransportStack {
     }
 
     pub async fn listen(&mut self) -> Result<()> {
-        if self.netns.is_none() {
-            self.l4.listen(self.upgrade_listeners.take()).await
+        if let Some(netns) = &self.netns {
+            netns.run(|| async { 
+                self.l4.listen(self.upgrade_listeners.take()).await 
+            })
         } else {
-            self.netns.as_ref().and_then(|netns| {
-                Some(netns.run(|| async { self.l4.listen(self.upgrade_listeners.take()).await }))
-            }).unwrap()
-            // let netns = self.netns.as_ref().unwrap();
-            // let ret = netns.run(|| async { self.l4.listen(self.upgrade_listeners.take()).await });
-            // match ret {
-            //     Ok(_ret) => {
-            //         return Ok(());
-            //     }
-            //     Err(e) => Err(e).or_err(BindError, "bind "),
-            // }
+            self.l4.listen(self.upgrade_listeners.take()).await
         }
-
-        // self.l4.listen(self.upgrade_listeners.take()).await
     }
 
     pub async fn accept(&mut self) -> Result<UninitializedStream> {
