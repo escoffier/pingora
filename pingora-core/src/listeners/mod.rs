@@ -71,14 +71,17 @@ impl TransportStack {
         if self.netns.is_none() {
             self.l4.listen(self.upgrade_listeners.take()).await
         } else {
-            let netns = self.netns.as_ref().unwrap();
-            let ret = netns.run(|| async {self.l4.listen(self.upgrade_listeners.take()).await} );
-            match ret {
-                Ok(_ret) => {
-                    return Ok(());
-                }
-                Err(e) => Err(e).or_err(BindError, "bind "),
-            }
+            self.netns.as_ref().and_then(|netns| {
+                Some(netns.run(|| async { self.l4.listen(self.upgrade_listeners.take()).await }))
+            }).unwrap()
+            // let netns = self.netns.as_ref().unwrap();
+            // let ret = netns.run(|| async { self.l4.listen(self.upgrade_listeners.take()).await });
+            // match ret {
+            //     Ok(_ret) => {
+            //         return Ok(());
+            //     }
+            //     Err(e) => Err(e).or_err(BindError, "bind "),
+            // }
         }
 
         // self.l4.listen(self.upgrade_listeners.take()).await
@@ -165,7 +168,7 @@ impl Listeners {
         addr: &str,
         sock_opt: TcpSocketOptions,
     ) {
-        self.add_addres_with_ns(netns,ServerAddress::Tcp(addr.into(), Some(sock_opt)));
+        self.add_addres_with_ns(netns, ServerAddress::Tcp(addr.into(), Some(sock_opt)));
     }
 
     /// Add a Unix domain socket endpoint to `self`.
