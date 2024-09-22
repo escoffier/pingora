@@ -69,6 +69,7 @@ impl TransportStack {
     }
 
     pub async fn listen(&mut self) -> Result<()> {
+        info!("### TransportStack listen ");
         if let Some(netns) = &self.netns {
             netns.run(|| async { 
                 self.l4.listen(self.upgrade_listeners.take()).await 
