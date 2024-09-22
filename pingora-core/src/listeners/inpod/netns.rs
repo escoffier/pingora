@@ -19,6 +19,9 @@ use std::sync::Arc;
 use std::time::Instant;
 use tracing::debug;
 use log::info;
+use pingora_error::{
+    ErrorType::{AcceptError, BindError},
+    OrErr, Result};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct NetnsID {
@@ -78,17 +81,17 @@ impl InpodNetns {
         self.inner.netns_id
     }
 
-    pub fn run<F, T>(&self, f: F) -> std::io::Result<T>
+    pub fn run<F, T>(&self, f: F) -> Result<()>
     where
         F: FnOnce() -> T,
     {
-        setns(self.inner.netns.as_raw_fd(), CloneFlags::CLONE_NEWNET)
-            .map_err(|e| std::io::Error::from_raw_os_error(e as i32))?;
+        setns(self.inner.netns.as_raw_fd(), CloneFlags::CLONE_NEWNET).or_err(BindError, "context")?;
+            // .map_err(|e| std::io::Error::from_raw_os_error(e as i32))?;
         info!("netns: {}", self.inner.netns.as_raw_fd());
         let ret = f();
         setns(self.inner.cur_netns.as_raw_fd(), CloneFlags::CLONE_NEWNET).expect("this must never fail");
         info!("cur_netns: {}", self.inner.cur_netns.as_raw_fd());
-        Ok(ret)
+        Ok(())
     }
 }
 

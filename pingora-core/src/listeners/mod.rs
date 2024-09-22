@@ -72,7 +72,7 @@ impl TransportStack {
             self.l4.listen(self.upgrade_listeners.take()).await
         } else {
             let netns = self.netns.as_ref().unwrap();
-            let ret = netns.run(|| self.l4.listen(self.upgrade_listeners.take()));
+            let ret = netns.run(|| async {self.l4.listen(self.upgrade_listeners.take()).await} );
             match ret {
                 Ok(_ret) => {
                     return Ok(());
@@ -80,9 +80,6 @@ impl TransportStack {
                 Err(e) => Err(e).or_err(BindError, "bind "),
             }
         }
-
-        // Ok(())
-        // Ok(ret.ok())
 
         // self.l4.listen(self.upgrade_listeners.take()).await
     }
