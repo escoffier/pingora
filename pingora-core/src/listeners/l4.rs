@@ -30,6 +30,7 @@ use crate::protocols::l4::listener::Listener;
 pub use crate::protocols::l4::stream::Stream;
 use crate::protocols::TcpKeepalive;
 use crate::server::ListenFds;
+use log::info;
 
 const TCP_LISTENER_MAX_TRY: usize = 30;
 const TCP_LISTENER_TRY_STEP: Duration = Duration::from_secs(1);
@@ -273,6 +274,7 @@ impl ListenerEndpoint {
             return Ok(());
         }
 
+        info!("### listen1");
         let listener = if let Some(fds_table) = fds {
             let addr = self.listen_addr.as_ref();
             // consider make this mutex std::sync::Mutex or OnceCell
@@ -283,10 +285,12 @@ impl ListenerEndpoint {
                 // not found
                 let listener = bind(&self.listen_addr).await?;
                 table.add(addr.to_string(), listener.as_raw_fd());
+                info!("### listen2");
                 listener
             }
         } else {
             // not found, no fd table
+            info!("### listen3");
             bind(&self.listen_addr).await?
         };
         self.listener = Some(listener);
