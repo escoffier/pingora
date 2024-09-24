@@ -295,6 +295,7 @@ impl ListenerEndpoint {
             info!("### listen3");
             bind(&self.listen_addr).await?
         };
+        info!("### listen4");
         self.listener = Some(listener);
         Ok(())
     }
