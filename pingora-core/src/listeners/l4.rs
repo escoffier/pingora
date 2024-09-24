@@ -284,6 +284,7 @@ impl ListenerEndpoint {
                 from_raw_fd(&self.listen_addr, *fd)?
             } else {
                 // not found
+                info!("### listen2-1");
                 let listener = bind(&self.listen_addr).await?;
                 table.add(addr.to_string(), listener.as_raw_fd());
                 info!("### listen2");
