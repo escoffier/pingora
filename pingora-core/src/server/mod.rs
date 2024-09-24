@@ -255,7 +255,7 @@ impl Server {
         let threads = service.threads().unwrap_or(conf.threads);
         let runtime = Server::run_service(
             Box::new(service),
-            self.listen_fds.clone(),
+            None,
             self.shutdown_recv.clone(),
             threads,
             conf.work_stealing,
