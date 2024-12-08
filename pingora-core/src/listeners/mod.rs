@@ -69,11 +69,12 @@ impl TransportStack {
     }
 
     pub async fn listen(&mut self) -> Result<()> {
-        info!("### TransportStack listen ");
         if let Some(netns) = &self.netns {
             let upgrade_listeners = self.upgrade_listeners.take();
+            let addr = self.l4.as_str().to_string();
+            let mut l4 = std::mem::replace(&mut self.l4, ListenerEndpoint::new(ServerAddress::Tcp(addr, None)));
             netns.run(move || block_on(async move {
-                self.l4.listen(upgrade_listeners).await
+                l4.listen(upgrade_listeners).await
             }))
         } else {
             self.l4.listen(self.upgrade_listeners.take()).await
