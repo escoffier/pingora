@@ -25,7 +25,7 @@ use futures::{executor::block_on, future::ok};
 
 // use pingora_error::Result;
 use pingora_error::{
-    ErrorType::{AcceptError, BindError},
+    ErrorType::{AcceptError, BindError, InternalError},
     OrErr, Result,
 };
 use std::{fs::Permissions, sync::Arc};
@@ -74,7 +74,7 @@ impl TransportStack {
             let l4 = &mut self.l4;
             netns.run(move || block_on(async move {
                 l4.listen(upgrade_listeners).await
-            }))
+            })).or_err(InternalError, "Failed to run in network namespace")?
         } else {
             self.l4.listen(self.upgrade_listeners.take()).await
         }

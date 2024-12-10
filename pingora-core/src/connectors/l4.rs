@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
+use futures::executor::block_on;
 use log::debug;
 use pingora_error::{Context, Error, ErrorType::*, OrErr, Result};
 use rand::seq::SliceRandom;

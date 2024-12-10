@@ -35,6 +35,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use futures::executor::block_on;
 
 /// The options to configure a [TransportConnector]
 #[derive(Clone)]
@@ -300,14 +301,32 @@ async fn do_connect_inner<P: Peer + Send + Sync>(
     alpn_override: Option<ALPN>,
     tls_ctx: &SslConnector,
 ) -> Result<Stream> {
-    let stream = l4_connect(peer, bind_to).await?;
-    if peer.tls() {
-        let tls_stream = tls::connect(stream, peer, alpn_override, tls_ctx).await?;
-        Ok(Box::new(tls_stream))
+    if let Some(podns) = peer.podns() {
+        let stream = podns.run(move || block_on(async move {
+            l4_connect(peer, bind_to).await
+        })).or_err(InternalError, "Failed to run in network namespace")?.expect("Failed to run in network namespace");
+        if peer.tls() {
+            let tls_stream = tls::connect(stream, peer, alpn_override, tls_ctx).await?;
+            return Ok(Box::new(tls_stream));
+        } else {
+            return Ok(Box::new(stream));
+        }
     } else {
-        Ok(Box::new(stream))
+        let stream =    l4_connect(peer, bind_to).await?;
+        if peer.tls() {
+            let tls_stream = tls::connect(stream, peer, alpn_override, tls_ctx).await?;
+            return Ok(Box::new(tls_stream));
+        } else {
+            return Ok(Box::new(stream));
+        }
     }
 }
+    //     let tls_stream = tls::connect(stream, peer, alpn_override, tls_ctx).await?;
+    //     Ok(Box::new(tls_stream))
+    // } else {
+    //     Ok(Box::new(stream))
+    // }
+// }
 
 struct PreferredHttpVersion {
     // TODO: shard to avoid the global lock

@@ -29,7 +29,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::connectors::L4Connect;
+use crate::{connectors::L4Connect, listeners::inpod::netns::InpodNetns};
 use crate::protocols::l4::socket::SocketAddr;
 use crate::protocols::ConnFdReusable;
 use crate::protocols::TcpKeepalive;
@@ -198,6 +198,10 @@ pub trait Peer: Display + Clone {
         self.get_peer_options().and_then(|o| o.mark)
     }
 
+    fn podns(&self) -> Option<&InpodNetns> {
+        self.get_peer_options().and_then(|o| o.netns.as_ref())
+    }
+
 }
 
 /// A simple TCP or TLS peer without many complicated settings.
@@ -332,6 +336,8 @@ pub struct PeerOptions {
     pub custom_l4: Option<Arc<dyn L4Connect + Send + Sync>>,
 
     pub mark: Option<u32>,
+
+    pub netns: Option<InpodNetns>,
 }
 
 impl PeerOptions {
@@ -362,6 +368,7 @@ impl PeerOptions {
             tracer: None,
             custom_l4: None,
             mark: None,
+            netns: None,
         }
     }
 

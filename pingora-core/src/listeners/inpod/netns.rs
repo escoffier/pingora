@@ -82,7 +82,7 @@ impl InpodNetns {
         self.inner.netns_id
     }
 
-    pub fn run<F, T>(&self, f: F) -> Result<()>
+    pub fn run<F, T>(&self, f: F) -> Result<(T)>
     where
         F: FnOnce() -> T,
     {
@@ -92,7 +92,7 @@ impl InpodNetns {
         let ret = f();
         setns(self.inner.cur_netns.as_raw_fd(), CloneFlags::CLONE_NEWNET).expect("this must never fail");
         info!("cur_netns: {}", self.inner.cur_netns.as_raw_fd());
-        Ok(())
+        Ok(ret)
     }
 }
 
