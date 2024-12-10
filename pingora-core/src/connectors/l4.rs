@@ -63,7 +63,7 @@ where
                             set_dscp(socket.as_raw_fd(), dscp)?;
                         }
                         if let Some(pkt_mark) = peer.mark() {
-                            debug!("Setting pkt mark");
+                            debug!("Setting pkt mark: {}", pkt_mark);
                             set_mark(socket.as_raw_fd(), pkt_mark)?;
                         }
                         Ok(())
