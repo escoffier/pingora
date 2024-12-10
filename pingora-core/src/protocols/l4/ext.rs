@@ -312,8 +312,14 @@ pub fn get_socket_cookie(_fd: RawFd) -> io::Result<u64> {
 
 #[cfg(target_os = "linux")]
 pub fn set_mark(fd: RawFd, mark: u32) -> Result<()> {
-    set_opt(fd, libc::SOL_SOCKET, libc::SO_MARK, mark as c_int)
-    .or_err(ConnectError, "failed to set SO_MARK")
+    // set_opt(fd, libc::SOL_SOCKET, libc::SO_MARK, mark as c_int)
+    // .or_err(ConnectError, "failed to set SO_MARK")
+    let result = set_opt(fd, libc::SOL_SOCKET, libc::SO_MARK, mark as c_int);
+    if let Err(e) = result {
+        log::error!("Failed to set SO_MARK: {}", e);
+        return Err(Error::because(ConnectError, "failed to set SO_MARK", e));
+    }
+    Ok(())
 }
 
 #[cfg(not(target_os = "linux"))]
