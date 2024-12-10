@@ -27,7 +27,7 @@ use std::time::{Duration, Instant, SystemTime};
 use tokio::io::{self, AsyncRead, AsyncWrite, AsyncWriteExt, BufStream, ReadBuf};
 use tokio::net::{TcpStream, UnixStream};
 
-use crate::protocols::l4::ext::{set_tcp_keepalive, TcpKeepalive};
+use crate::protocols::l4::ext::{set_tcp_keepalive, TcpKeepalive, set_socket_mark};
 use crate::protocols::raw_connect::ProxyDigest;
 use crate::protocols::{
     GetProxyDigest, GetSocketDigest, GetTimingDigest, Shutdown, SocketDigest, Ssl, TimingDigest,
@@ -167,7 +167,9 @@ impl Stream {
 
     pub fn  set_mark(&mut self, mark: u32) -> Result<()> {
         if let RawStream::Tcp(s) = &self.stream.get_ref() {
-            debug!("setting mark");
+            debug!("setting mark {}", mark);
+            set_socket_mark(s, mark)?;
+
             // s.set_linger(dur)
         }
         Ok(())

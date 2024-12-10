@@ -418,6 +418,11 @@ pub fn set_tcp_keepalive(stream: &TcpStream, ka: &TcpKeepalive) -> Result<()> {
     set_keepalive(fd, ka).or_err(ConnectError, "failed to set keepalive")
 }
 
+pub fn set_socket_mark(stream: &TcpStream, mark: u32) -> Result<()> {
+    let fd = stream.as_raw_fd();
+    // TODO: check localhost or if keepalive is already set
+    set_mark(fd, mark).or_err(ConnectError, "failed to set mark")
+}
 #[cfg(test)]
 mod test {
     use super::*;
